@@ -1,0 +1,67 @@
+# Назва нашого процесу
+name: CI Pipeline
+
+# Вказуємо, що процес запускається щоразу під час відправлення коду (push) до GitHub
+on: [push]
+
+jobs:
+  # ЗАВДАННЯ 1: Лінтер та Тестування
+  test_and_lint:
+    # Використовуємо операційну систему Ubuntu на сервері GitHub
+    runs-on: ubuntu-latest
+
+    # Налаштовуємо мультиверсійне тестування
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      # Крок 1: Завантажуємо твій код на сервер
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Крок 2: Встановлюємо потрібну версію Python з матриці
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Крок 3: Встановлюємо бібліотеки з requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Крок 4: Перевірка стилю коду (Linting)
+      - name: Run Linting (Flake8)
+        # Перевіряємо файли на помилки та занадто довгі рядки
+        run: flake8 . --count --max-line-length=100 --statistics
+
+      # Крок 5: Автоматичне тестування та генерація HTML-звіту
+      - name: Run Pytest and Generate HTML Report
+        # Запускаємо тести та просимо створити файл report.html
+        run: pytest --html=report.html --self-contained-html
+
+      # Крок 6: Зберігаємо HTML-звіт, щоб ти могла його завантажити на GitHub
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        # Зберігаємо звіт, навіть якщо тести впадуть
+        if: always()
+        with:
+          name: pytest-report-python-${{ matrix.python-version }}
+          path: report.html
+
+  # ЗАВДАННЯ 2: Збірка Docker-контейнера
+  build_docker:
+    runs-on: ubuntu-latest
+    # Запускати збірку, тільки якщо тести успішно пройдені
+    needs: test_and_lint
+    steps:
+      # Крок 1: Завантажуємо код
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Крок 2: Збираємо образ Docker
+      - name: Build Docker Image
+        # Даємо нашому контейнеру ім'я 'my-python-app'
+        run: docker build -t my-python-app .
