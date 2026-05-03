@@ -12,4 +12,4 @@ def count_words(text: str) -> int:
 # Функція для перевірки, чи містить текст лише літери (без цифр)
 def is_text_alpha(text: str) -> bool:
     # Видаляємо пробіли та перевіряємо, чи залишилися лише літери
-    return text.replace(" ", "").isalpha()
+    return text.replace(" ", "").isalpha(
